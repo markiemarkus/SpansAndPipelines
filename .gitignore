@@ -3,3 +3,12 @@
 ################################################################################
 
 /SpansAndPipelines/obj
+/SpansAndPipelines/bin/Debug/netcoreapp3.1
+/ExploringSpansAndPipelines.Core.Tests/Assets
+/ExploringSpansAndPipelines.Core.Tests/bin/Debug/netcoreapp3.0
+/ExploringSpansAndPipelines.Core.Tests/obj
+/ExploringSpansAndPipelines.Core/bin/Debug/netcoreapp3.0
+/ExploringSpansAndPipelines.Core/obj
+/.vs
+/ExploringSpansAndPipelines.Benchmarks/bin/Debug/netcoreapp3.0
+/ExploringSpansAndPipelines.Benchmarks/obj

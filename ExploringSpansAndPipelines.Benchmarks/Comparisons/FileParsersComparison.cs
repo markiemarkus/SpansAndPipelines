@@ -15,18 +15,20 @@ namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
         private IFileParser _fileParser;
         private IFileParser _fileParserSpans;
         private IFileParser _fileParserSpansAndPipes;
+        private IFileParser _fileParserImproved;
 
         [GlobalSetup]
         public void Setup()
         {
             var current = Directory.GetCurrentDirectory();
             _file = Path.Combine(current, "Assets", "BenchmarkData.psv");
-            
+
             _fileParser = new FileParser(new LineParser());
             _fileParserSpans = new FileParser(new LineParserSpans());
             _fileParserSpansAndPipes = new FileParserSpansAndPipelines();
+            _fileParserImproved = new FileParserImproved();
         }
-        
+
         [Benchmark]
         public async Task FileParser()
         {
@@ -38,11 +40,17 @@ namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
         {
             (await _fileParserSpans.Parse(_file)).Consume(_consumer);
         }
-        
+
         [Benchmark]
         public async Task FileParserSpansAndPipes()
         {
             (await _fileParserSpansAndPipes.Parse(_file)).Consume(_consumer);
+        }
+
+        [Benchmark]
+        public async Task FileParserImproved()
+        {
+            (await _fileParserImproved.Parse(_file)).Consume(_consumer);
         }
     }
 }

@@ -12,3 +12,7 @@
 /.vs
 /ExploringSpansAndPipelines.Benchmarks/bin/Debug/netcoreapp3.0
 /ExploringSpansAndPipelines.Benchmarks/obj
+/ExploringSpansAndPipelines.Benchmarks/bin/Release/netcoreapp3.0
+/ExploringSpansAndPipelines.Core/bin/Release/netcoreapp3.0
+/ExploringSpansAndPipelines.Core.Tests/bin/Release/netcoreapp3.0
+/SpansAndPipelines/bin/Release/netcoreapp3.1

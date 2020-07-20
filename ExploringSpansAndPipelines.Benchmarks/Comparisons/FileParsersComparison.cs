@@ -4,6 +4,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using ExploringSpansAndIOPipelines.Core.Interfaces;
 using ExploringSpansAndIOPipelines.Core.Parsers;
+using ExploringSpansAndIOPipelines.Core.Parsers.Interfaces;
 
 namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
 {
@@ -16,6 +17,9 @@ namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
         private IFileParser _fileParserSpans;
         private IFileParser _fileParserSpansAndPipes;
         private IFileParser _fileParserImproved;
+        
+        private IFileParser _syncFileParser;
+        private IFileParser _syncFileParserSpans;
 
         [GlobalSetup]
         public void Setup()
@@ -25,8 +29,13 @@ namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
 
             _fileParser = new FileParser(new LineParser());
             _fileParserSpans = new FileParser(new LineParserSpans());
-            _fileParserSpansAndPipes = new FileParserSpansAndPipelines();
             _fileParserImproved = new FileParserImproved();
+            
+            _syncFileParser = new SyncFileParser(new LineParser());
+            _syncFileParserSpans = new SyncFileParser(new LineParserSpans());
+
+            _fileParserSpansAndPipes = new FileParserSpansAndPipelines();
+
         }
 
         [Benchmark]
@@ -51,6 +60,18 @@ namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
         public async Task FileParserImproved()
         {
             (await _fileParserImproved.Parse(_file)).Consume(_consumer);
+        }
+
+        [Benchmark]
+        public async Task SyncFileParser()
+        {
+            (await _syncFileParser.Parse(_file)).Consume(_consumer);
+        }
+
+        [Benchmark]
+        public async Task SyncFileParserSpans()
+        {
+            (await _syncFileParserSpans.Parse(_file)).Consume(_consumer);
         }
     }
 }

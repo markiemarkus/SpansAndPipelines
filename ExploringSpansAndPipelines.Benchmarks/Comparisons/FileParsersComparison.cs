@@ -29,12 +29,13 @@ namespace ExploringSpansAndIOPipelines.Benchmarks.Comparisons
 
             _fileParser = new FileParser(new LineParser());
             _fileParserSpans = new FileParser(new LineParserSpans());
-            _fileParserImproved = new FileParserImproved();
             
             _syncFileParser = new SyncFileParser(new LineParser());
             _syncFileParserSpans = new SyncFileParser(new LineParserSpans());
 
             _fileParserSpansAndPipes = new FileParserSpansAndPipelines();
+            _fileParserImproved = new FileParserImproved();
+
 
         }
 

@@ -1,0 +1,105 @@
+<Window x:Class="CurrencyManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+        xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
+        xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+        xmlns:local="clr-namespace:CurrencyManager"
+        mc:Ignorable="d"
+        Title="Currency Tier Manager" Height="600" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Systems List -->
+        <GroupBox Grid.Row="0" Grid.Column="0" Header="Systems" Margin="0,0,5,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="Add System" Margin="0,0,5,0" Padding="5,2"/>
+                    <Button Content="Remove System" Padding="5,2"/>
+                </StackPanel>
+                <dxe:ListBoxEdit ItemsSource="{Binding Systems}"
+                                 SelectedItem="{Binding SelectedSystem}"
+                                 DisplayMember="Name"
+                                 Height="Auto"/>
+            </DockPanel>
+        </GroupBox>
+
+        <!-- Currencies Grid -->
+        <GroupBox Grid.Row="0" Grid.Column="1" Header="Currencies" Margin="5,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Tier Adjustment Controls -->
+                <Grid Grid.Row="0" Margin="0,0,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,0">
+                        <Button Content="Decrease Tier" 
+                                Command="{Binding DecreaseTierCommand}"
+                                Padding="5,2" Margin="0,0,5,0"/>
+                        <Button Content="Increase Tier" 
+                                Command="{Binding IncreaseTierCommand}"
+                                Padding="5,2"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1" 
+                               Text="Set Tier:" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,5,0"/>
+
+                    <dxe:ComboBoxEdit Grid.Column="2"
+                                      Width="50"
+                                      ItemsSource="{Binding Tiers}"
+                                      EditValue="{Binding SelectedTier}"/>
+                </Grid>
+
+                <!-- DevExpress GridControl -->
+                <dxg:GridControl Grid.Row="1"
+                                 ItemsSource="{Binding SelectedSystem.Currencies}"
+                                 AutoGenerateColumns="None"
+                                 SelectionMode="Row"
+                                 SelectionChanged="DataGrid_SelectionChanged">
+                    <dxg:GridControl.View>
+                        <dxg:TableView AllowPerPixelScrolling="True"
+                                       ShowGroupPanel="False"
+                                       AllowAddRows="False"
+                                       AllowDeleteRows="False"
+                                       NavigationStyle="Row"/>
+                    </dxg:GridControl.View>
+                    <dxg:GridControl.Columns>
+                        <dxg:GridColumn FieldName="Code" Header="Code" ReadOnly="True"/>
+                        <dxg:GridColumn FieldName="Name" Header="Name" ReadOnly="True"/>
+                        <dxg:GridColumn FieldName="Tier" Header="Tier" ReadOnly="True"/>
+                    </dxg:GridControl.Columns>
+                </dxg:GridControl>
+            </Grid>
+        </GroupBox>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Bottom">
+            <StatusBarItem>
+                <TextBlock Text="{Binding SelectedSystem.Name, StringFormat='Selected System: {0}'}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding SelectedCurrencies.Count, StringFormat='Selected Currencies: {0}'}"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

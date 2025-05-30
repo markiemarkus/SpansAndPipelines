@@ -3,9 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-        xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
-        xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
         xmlns:local="clr-namespace:CurrencyManager"
         mc:Ignorable="d"
         Title="Currency Tier Manager" Height="600" Width="800">
@@ -26,15 +23,14 @@
                     <Button Content="Add System" Margin="0,0,5,0" Padding="5,2"/>
                     <Button Content="Remove System" Padding="5,2"/>
                 </StackPanel>
-                <dxe:ListBoxEdit ItemsSource="{Binding Systems}"
-                                 SelectedItem="{Binding SelectedSystem}"
-                                 DisplayMember="Name"
-                                 Height="Auto"/>
+                <ListBox ItemsSource="{Binding Systems}"
+                         SelectedItem="{Binding SelectedSystem}"
+                         DisplayMemberPath="Name"/>
             </DockPanel>
         </GroupBox>
 
-        <!-- Currencies Grid -->
-        <GroupBox Grid.Row="0" Grid.Column="1" Header="Currencies" Margin="5,0,0,0">
+        <!-- Currencies by Tier -->
+        <GroupBox Grid.Row="0" Grid.Column="1" Header="Currencies by Tier" Margin="5,0,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -42,53 +38,216 @@
                 </Grid.RowDefinitions>
 
                 <!-- Tier Adjustment Controls -->
-                <Grid Grid.Row="0" Margin="0,0,0,5">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Decrease Tier" 
+                            Command="{Binding DecreaseTierCommand}"
+                            Padding="5,2" Margin="0,0,5,0"/>
+                    <Button Content="Increase Tier" 
+                            Command="{Binding IncreaseTierCommand}"
+                            Padding="5,2"/>
+                </StackPanel>
+
+                <!-- Tier Groups -->
+                <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,0">
-                        <Button Content="Decrease Tier" 
-                                Command="{Binding DecreaseTierCommand}"
-                                Padding="5,2" Margin="0,0,5,0"/>
-                        <Button Content="Increase Tier" 
-                                Command="{Binding IncreaseTierCommand}"
-                                Padding="5,2"/>
-                    </StackPanel>
+                    <!-- Tier 1 -->
+                    <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" 
+                                     Text="Tier 1" 
+                                     FontWeight="Bold" 
+                                     Background="#FFE0E0E0"
+                                     Padding="5"/>
+                            <ListBox x:Name="Tier1ListBox"
+                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    SelectionMode="Extended"
+                                    SelectionChanged="ListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Run Text="{Binding Code}"/>
+                                            <Run Text=" - "/>
+                                            <Run Text="{Binding Name}"/>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Tier}" Value="1">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="2">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="3">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="4">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
 
-                    <TextBlock Grid.Column="1" 
-                               Text="Set Tier:" 
-                               VerticalAlignment="Center" 
-                               Margin="0,0,5,0"/>
+                    <!-- Tier 2 -->
+                    <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="5,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" 
+                                     Text="Tier 2" 
+                                     FontWeight="Bold" 
+                                     Background="#FFE0E0E0"
+                                     Padding="5"/>
+                            <ListBox x:Name="Tier2ListBox"
+                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    SelectionMode="Extended"
+                                    SelectionChanged="ListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Run Text="{Binding Code}"/>
+                                            <Run Text=" - "/>
+                                            <Run Text="{Binding Name}"/>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Tier}" Value="2">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="1">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="3">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="4">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
 
-                    <dxe:ComboBoxEdit Grid.Column="2"
-                                      Width="50"
-                                      ItemsSource="{Binding Tiers}"
-                                      EditValue="{Binding SelectedTier}"/>
+                    <!-- Tier 3 -->
+                    <Border Grid.Column="2" BorderBrush="Gray" BorderThickness="1" Margin="5,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" 
+                                     Text="Tier 3" 
+                                     FontWeight="Bold" 
+                                     Background="#FFE0E0E0"
+                                     Padding="5"/>
+                            <ListBox x:Name="Tier3ListBox"
+                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    SelectionMode="Extended"
+                                    SelectionChanged="ListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Run Text="{Binding Code}"/>
+                                            <Run Text=" - "/>
+                                            <Run Text="{Binding Name}"/>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Tier}" Value="3">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="1">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="2">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="4">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Tier 4 -->
+                    <Border Grid.Column="3" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" 
+                                     Text="Tier 4" 
+                                     FontWeight="Bold" 
+                                     Background="#FFE0E0E0"
+                                     Padding="5"/>
+                            <ListBox x:Name="Tier4ListBox"
+                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    SelectionMode="Extended"
+                                    SelectionChanged="ListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Run Text="{Binding Code}"/>
+                                            <Run Text=" - "/>
+                                            <Run Text="{Binding Name}"/>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Tier}" Value="4">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="1">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="2">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Tier}" Value="3">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
                 </Grid>
-
-                <!-- DevExpress GridControl -->
-                <dxg:GridControl Grid.Row="1"
-                                 ItemsSource="{Binding SelectedSystem.Currencies}"
-                                 AutoGenerateColumns="None"
-                                 SelectionMode="Row"
-                                 SelectionChanged="DataGrid_SelectionChanged">
-                    <dxg:GridControl.View>
-                        <dxg:TableView AllowPerPixelScrolling="True"
-                                       ShowGroupPanel="False"
-                                       AllowAddRows="False"
-                                       AllowDeleteRows="False"
-                                       NavigationStyle="Row"/>
-                    </dxg:GridControl.View>
-                    <dxg:GridControl.Columns>
-                        <dxg:GridColumn FieldName="Code" Header="Code" ReadOnly="True"/>
-                        <dxg:GridColumn FieldName="Name" Header="Name" ReadOnly="True"/>
-                        <dxg:GridColumn FieldName="Tier" Header="Tier" ReadOnly="True"/>
-                    </dxg:GridControl.Columns>
-                </dxg:GridControl>
             </Grid>
         </GroupBox>
 
@@ -102,4 +261,4 @@
             </StatusBarItem>
         </StatusBar>
     </Grid>
-</Window>
+</Window> 

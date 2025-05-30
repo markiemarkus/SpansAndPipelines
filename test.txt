@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CurrencyManager"
         mc:Ignorable="d"
-        Title="Currency Tier Manager" Height="600" Width="800">
+        Title="TierMappingItem Tier Manager" Height="600" Width="800">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -29,8 +29,8 @@
             </DockPanel>
         </GroupBox>
 
-        <!-- Currencies by Tier -->
-        <GroupBox Grid.Row="0" Grid.Column="1" Header="Currencies by Tier" Margin="5,0,0,0">
+        <!-- CurrencyTierMap by Tier -->
+        <GroupBox Grid.Row="0" Grid.Column="1" Header="CurrencyTierMap by Tier" Margin="5,0,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -65,7 +65,7 @@
                                      Background="#FFE0E0E0"
                                      Padding="5"/>
                             <ListBox x:Name="Tier1ListBox"
-                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
                                     SelectionMode="Extended"
                                     SelectionChanged="ListBox_SelectionChanged">
                                 <ListBox.ItemTemplate>
@@ -113,7 +113,7 @@
                                      Background="#FFE0E0E0"
                                      Padding="5"/>
                             <ListBox x:Name="Tier2ListBox"
-                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
                                     SelectionMode="Extended"
                                     SelectionChanged="ListBox_SelectionChanged">
                                 <ListBox.ItemTemplate>
@@ -161,7 +161,7 @@
                                      Background="#FFE0E0E0"
                                      Padding="5"/>
                             <ListBox x:Name="Tier3ListBox"
-                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
                                     SelectionMode="Extended"
                                     SelectionChanged="ListBox_SelectionChanged">
                                 <ListBox.ItemTemplate>
@@ -209,7 +209,7 @@
                                      Background="#FFE0E0E0"
                                      Padding="5"/>
                             <ListBox x:Name="Tier4ListBox"
-                                    ItemsSource="{Binding SelectedSystem.Currencies}"
+                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
                                     SelectionMode="Extended"
                                     SelectionChanged="ListBox_SelectionChanged">
                                 <ListBox.ItemTemplate>
@@ -257,7 +257,7 @@
                 <TextBlock Text="{Binding SelectedSystem.Name, StringFormat='Selected System: {0}'}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="{Binding SelectedCurrencies.Count, StringFormat='Selected Currencies: {0}'}"/>
+                <TextBlock Text="{Binding SelectedCurrencies.Count, StringFormat='Selected CurrencyTierMap: {0}'}"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

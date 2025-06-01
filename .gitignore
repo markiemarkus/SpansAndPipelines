@@ -16,3 +16,8 @@
 /ExploringSpansAndPipelines.Core/bin/Release/netcoreapp3.0
 /ExploringSpansAndPipelines.Core.Tests/bin/Release/netcoreapp3.0
 /SpansAndPipelines/bin/Release/netcoreapp3.1
+/ccy/.vs
+/ccy/obj/Debug/net6.0-windows
+/ccy/obj/Debug/net9.0-windows7.0
+/ccy/obj
+/ccy/bin/Debug/net9.0-windows7.0

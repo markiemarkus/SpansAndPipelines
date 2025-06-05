@@ -1,6 +1,4 @@
-using System;
 using System.Globalization;
-using System.Collections.Generic;
 using ConsoleApp1;
 
 public class BaseDataModelComparer : IEqualityComparer<BaseDataModel>
@@ -10,17 +8,28 @@ public class BaseDataModelComparer : IEqualityComparer<BaseDataModel>
         if (a == null || b == null)
             return false;
 
-        // Compare MetricValueGBP and TriggerValueGBP with threshold of 1
+        // Compare all required properties
+        bool busDateEqual = a.BusDate.Date == b.BusDate.Date;
+        bool nodeNameEqual = string.Equals(a.NodeName, b.NodeName, StringComparison.Ordinal);
+        bool riskMetricEqual = string.Equals(a.RiskMetric, b.RiskMetric, StringComparison.Ordinal);
+        bool triggerNameEqual = string.Equals(a.TriggerName, b.TriggerName, StringComparison.Ordinal);
+        bool triggerTypeEqual = string.Equals(a.TriggerType, b.TriggerType, StringComparison.Ordinal);
+
         bool metricClose = Math.Abs(a.MetricValueGBP - b.MetricValueGBP) <= 1;
         bool triggerClose = Math.Abs(a.TriggerValueGBP - b.TriggerValueGBP) <= 1;
 
-        // Parse Utilisation to double, handling both "33%" and "32.5567" formats
         double utilA = ParseUtilisation(a.Utilisation);
         double utilB = ParseUtilisation(b.Utilisation);
-
         bool utilisationClose = Math.Abs(Math.Round(utilA) - Math.Round(utilB)) == 0;
 
-        return metricClose && triggerClose && utilisationClose;
+        return busDateEqual
+            && nodeNameEqual
+            && riskMetricEqual
+            && triggerNameEqual
+            && triggerTypeEqual
+            && metricClose
+            && triggerClose
+            && utilisationClose;
     }
 
     public bool Equals(BaseDataModel x, BaseDataModel y)
@@ -32,16 +41,15 @@ public class BaseDataModelComparer : IEqualityComparer<BaseDataModel>
     {
         if (obj == null) return 0;
 
-        // Use rounded/thresholded values for hash code to match comparison logic
-        int metricHash = Math.Round(obj.MetricValueGBP).GetHashCode();
-        int triggerHash = Math.Round(obj.TriggerValueGBP).GetHashCode();
-        int utilisationHash = Math.Round(ParseUtilisation(obj.Utilisation)).GetHashCode();
-
-        // Combine hashes
         int hash = 17;
-        hash = hash * 23 + metricHash;
-        hash = hash * 23 + triggerHash;
-        hash = hash * 23 + utilisationHash;
+        hash = hash * 23 + obj.BusDate.Date.GetHashCode();
+        hash = hash * 23 + (obj.NodeName?.GetHashCode() ?? 0);
+        hash = hash * 23 + (obj.RiskMetric?.GetHashCode() ?? 0);
+        hash = hash * 23 + (obj.TriggerName?.GetHashCode() ?? 0);
+        hash = hash * 23 + (obj.TriggerType?.GetHashCode() ?? 0);
+        hash = hash * 23 + Math.Round(obj.MetricValueGBP).GetHashCode();
+        hash = hash * 23 + Math.Round(obj.TriggerValueGBP).GetHashCode();
+        hash = hash * 23 + Math.Round(ParseUtilisation(obj.Utilisation)).GetHashCode();
         return hash;
     }
 

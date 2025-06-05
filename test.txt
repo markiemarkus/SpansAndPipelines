@@ -1,264 +1,66 @@
-<Window x:Class="CurrencyManager.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:CurrencyManager"
-        mc:Ignorable="d"
-        Title="TierMappingItem Tier Manager" Height="600" Width="800">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+using System;
+using System.Globalization;
+using System.Collections.Generic;
+using ConsoleApp1;
 
-        <!-- Systems List -->
-        <GroupBox Grid.Row="0" Grid.Column="0" Header="Systems" Margin="0,0,5,0">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="Add System" Margin="0,0,5,0" Padding="5,2"/>
-                    <Button Content="Remove System" Padding="5,2"/>
-                </StackPanel>
-                <ListBox ItemsSource="{Binding Systems}"
-                         SelectedItem="{Binding SelectedSystem}"
-                         DisplayMemberPath="Name"/>
-            </DockPanel>
-        </GroupBox>
+public class BaseDataModelComparer : IEqualityComparer<BaseDataModel>
+{
+    public bool AreEquivalent(BaseDataModel a, BaseDataModel b)
+    {
+        if (a == null || b == null)
+            return false;
 
-        <!-- CurrencyTierMap by Tier -->
-        <GroupBox Grid.Row="0" Grid.Column="1" Header="CurrencyTierMap by Tier" Margin="5,0,0,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+        // Compare MetricValueGBP and TriggerValueGBP with threshold of 1
+        bool metricClose = Math.Abs(a.MetricValueGBP - b.MetricValueGBP) <= 1;
+        bool triggerClose = Math.Abs(a.TriggerValueGBP - b.TriggerValueGBP) <= 1;
 
-                <!-- Tier Adjustment Controls -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                    <Button Content="Decrease Tier" 
-                            Command="{Binding DecreaseTierCommand}"
-                            Padding="5,2" Margin="0,0,5,0"/>
-                    <Button Content="Increase Tier" 
-                            Command="{Binding IncreaseTierCommand}"
-                            Padding="5,2"/>
-                </StackPanel>
+        // Parse Utilisation to double, handling both "33%" and "32.5567" formats
+        double utilA = ParseUtilisation(a.Utilisation);
+        double utilB = ParseUtilisation(b.Utilisation);
 
-                <!-- Tier Groups -->
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+        bool utilisationClose = Math.Abs(Math.Round(utilA) - Math.Round(utilB)) == 0;
 
-                    <!-- Tier 1 -->
-                    <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" 
-                                     Text="Tier 1" 
-                                     FontWeight="Bold" 
-                                     Background="#FFE0E0E0"
-                                     Padding="5"/>
-                            <ListBox x:Name="Tier1ListBox"
-                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
-                                    SelectionMode="Extended"
-                                    SelectionChanged="ListBox_SelectionChanged">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock>
-                                            <Run Text="{Binding Code}"/>
-                                            <Run Text=" - "/>
-                                            <Run Text="{Binding Name}"/>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Tier}" Value="1">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="2">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="3">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="4">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                            </ListBox>
-                        </DockPanel>
-                    </Border>
+        return metricClose && triggerClose && utilisationClose;
+    }
 
-                    <!-- Tier 2 -->
-                    <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="5,0">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" 
-                                     Text="Tier 2" 
-                                     FontWeight="Bold" 
-                                     Background="#FFE0E0E0"
-                                     Padding="5"/>
-                            <ListBox x:Name="Tier2ListBox"
-                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
-                                    SelectionMode="Extended"
-                                    SelectionChanged="ListBox_SelectionChanged">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock>
-                                            <Run Text="{Binding Code}"/>
-                                            <Run Text=" - "/>
-                                            <Run Text="{Binding Name}"/>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Tier}" Value="2">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="1">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="3">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="4">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                            </ListBox>
-                        </DockPanel>
-                    </Border>
+    public bool Equals(BaseDataModel x, BaseDataModel y)
+    {
+        return AreEquivalent(x, y);
+    }
 
-                    <!-- Tier 3 -->
-                    <Border Grid.Column="2" BorderBrush="Gray" BorderThickness="1" Margin="5,0">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" 
-                                     Text="Tier 3" 
-                                     FontWeight="Bold" 
-                                     Background="#FFE0E0E0"
-                                     Padding="5"/>
-                            <ListBox x:Name="Tier3ListBox"
-                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
-                                    SelectionMode="Extended"
-                                    SelectionChanged="ListBox_SelectionChanged">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock>
-                                            <Run Text="{Binding Code}"/>
-                                            <Run Text=" - "/>
-                                            <Run Text="{Binding Name}"/>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Tier}" Value="3">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="1">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="2">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="4">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                            </ListBox>
-                        </DockPanel>
-                    </Border>
+    public int GetHashCode(BaseDataModel obj)
+    {
+        if (obj == null) return 0;
 
-                    <!-- Tier 4 -->
-                    <Border Grid.Column="3" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" 
-                                     Text="Tier 4" 
-                                     FontWeight="Bold" 
-                                     Background="#FFE0E0E0"
-                                     Padding="5"/>
-                            <ListBox x:Name="Tier4ListBox"
-                                    ItemsSource="{Binding SelectedSystem.CurrencyTierMap}"
-                                    SelectionMode="Extended"
-                                    SelectionChanged="ListBox_SelectionChanged">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock>
-                                            <Run Text="{Binding Code}"/>
-                                            <Run Text=" - "/>
-                                            <Run Text="{Binding Name}"/>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Tier}" Value="4">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="1">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="2">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Tier}" Value="3">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                            </ListBox>
-                        </DockPanel>
-                    </Border>
-                </Grid>
-            </Grid>
-        </GroupBox>
+        // Use rounded/thresholded values for hash code to match comparison logic
+        int metricHash = Math.Round(obj.MetricValueGBP).GetHashCode();
+        int triggerHash = Math.Round(obj.TriggerValueGBP).GetHashCode();
+        int utilisationHash = Math.Round(ParseUtilisation(obj.Utilisation)).GetHashCode();
 
-        <!-- Status Bar -->
-        <StatusBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Bottom">
-            <StatusBarItem>
-                <TextBlock Text="{Binding SelectedSystem.Name, StringFormat='Selected System: {0}'}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <TextBlock Text="{Binding SelectedCurrencies.Count, StringFormat='Selected CurrencyTierMap: {0}'}"/>
-            </StatusBarItem>
-        </StatusBar>
-    </Grid>
-</Window> 
+        // Combine hashes
+        int hash = 17;
+        hash = hash * 23 + metricHash;
+        hash = hash * 23 + triggerHash;
+        hash = hash * 23 + utilisationHash;
+        return hash;
+    }
+
+    private double ParseUtilisation(string utilisation)
+    {
+        if (string.IsNullOrWhiteSpace(utilisation))
+            return 0;
+
+        utilisation = utilisation.Trim();
+        if (utilisation.EndsWith("%"))
+        {
+            if (double.TryParse(utilisation.TrimEnd('%'), NumberStyles.Any, CultureInfo.InvariantCulture, out double percent))
+                return percent;
+        }
+        else
+        {
+            if (double.TryParse(utilisation, NumberStyles.Any, CultureInfo.InvariantCulture, out double value))
+                return value;
+        }
+        return 0;
+    }
+}

@@ -1,3 +1,66 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+# 1. Load your dataset
+df = pd.read_csv('pl_fixtures_stats.csv')  # contains past match stats and results
+
+# 2. Encode result
+result_encoder = LabelEncoder()
+df['result_encoded'] = result_encoder.fit_transform(df['result'])  # H=0, D=1, A=2
+
+# 3. Select features
+features = [
+    'home_team', 'away_team',
+    'home_goals', 'away_goals',
+    'home_possession', 'away_possession',
+    'home_shots', 'away_shots',
+    'home_corners', 'away_corners',
+    # Add any other stats you have
+]
+
+# Encode team names
+df['home_team'] = LabelEncoder().fit_transform(df['home_team'])
+df['away_team'] = LabelEncoder().fit_transform(df['away_team'])
+
+X = df[features]
+y = df['result_encoded']
+
+# 4. Train/test split
+X_train = X[:340]
+X_test = X[340:]
+y_train = y[:340]
+y_test = y[340:]
+
+# 5. Scale
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 6. Train model
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
+clf.fit(X_train_scaled, y_train)
+
+# 7. Evaluate
+y_pred = clf.predict(X_test_scaled)
+print(classification_report(y_test, y_pred, target_names=result_encoder.classes_))
+
+# 8. Predict upcoming 10 fixtures
+upcoming_df = pd.read_csv('next_10_fixtures_stats.csv')  # same structure but without results
+upcoming_df['home_team'] = LabelEncoder().fit_transform(upcoming_df['home_team'])
+upcoming_df['away_team'] = LabelEncoder().fit_transform(upcoming_df['away_team'])
+
+X_upcoming = scaler.transform(upcoming_df[features])
+predictions = clf.predict(X_upcoming)
+predicted_labels = result_encoder.inverse_transform(predictions)
+
+# Show predictions
+upcoming_df['predicted_result'] = predicted_labels
+print(upcoming_df[['home_team', 'away_team', 'predicted_result']])
+
+
 using System.Globalization;
 using ConsoleApp1;
 

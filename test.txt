@@ -1,137 +1,428 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Diagnostics;
+using System.Xml;
 
-# 1. Load your dataset
-df = pd.read_csv('pl_fixtures_stats.csv')  # contains past match stats and results
-
-# 2. Encode result
-result_encoder = LabelEncoder()
-df['result_encoded'] = result_encoder.fit_transform(df['result'])  # H=0, D=1, A=2
-
-# 3. Select features
-features = [
-    'home_team', 'away_team',
-    'home_goals', 'away_goals',
-    'home_possession', 'away_possession',
-    'home_shots', 'away_shots',
-    'home_corners', 'away_corners',
-    # Add any other stats you have
-]
-
-# Encode team names
-df['home_team'] = LabelEncoder().fit_transform(df['home_team'])
-df['away_team'] = LabelEncoder().fit_transform(df['away_team'])
-
-X = df[features]
-y = df['result_encoded']
-
-# 4. Train/test split
-X_train = X[:340]
-X_test = X[340:]
-y_train = y[:340]
-y_test = y[340:]
-
-# 5. Scale
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-# 6. Train model
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
-clf.fit(X_train_scaled, y_train)
-
-# 7. Evaluate
-y_pred = clf.predict(X_test_scaled)
-print(classification_report(y_test, y_pred, target_names=result_encoder.classes_))
-
-# 8. Predict upcoming 10 fixtures
-upcoming_df = pd.read_csv('next_10_fixtures_stats.csv')  # same structure but without results
-upcoming_df['home_team'] = LabelEncoder().fit_transform(upcoming_df['home_team'])
-upcoming_df['away_team'] = LabelEncoder().fit_transform(upcoming_df['away_team'])
-
-X_upcoming = scaler.transform(upcoming_df[features])
-predictions = clf.predict(X_upcoming)
-predicted_labels = result_encoder.inverse_transform(predictions)
-
-# Show predictions
-upcoming_df['predicted_result'] = predicted_labels
-print(upcoming_df[['home_team', 'away_team', 'predicted_result']])
-
-
-using System.Globalization;
-using ConsoleApp1;
-
-public class BaseDataModelComparer : IEqualityComparer<BaseDataModel>
+namespace Tools
 {
-    public bool AreEquivalent(BaseDataModel a, BaseDataModel b)
+    /// <summary>
+    /// The DynamicConfig class provides a way to hold key-value pair configuration
+    /// in a class that allows modification during application runtime. The class
+    /// provides a refresh event and the ability to auto refresh when the configuration
+    /// file has changed. This class is useful for web applications that would usually
+    /// store configuration in the web.config file. Editing this would usually restart
+    /// the application.
+    /// 
+    /// This class is typically overridden and the PostRefresh method overridden to
+    /// populate application specific properties to remove the need to look-up values
+    /// in the collection every time.
+    /// </summary>
+    public class DynamicConfig : IDisposable
     {
-        if (a == null || b == null)
-            return false;
+        protected const string DEFAULT_CONFIG_ELEMENT = "add";
 
-        // Compare all required properties
-        bool busDateEqual = a.BusDate.Date == b.BusDate.Date;
-        bool nodeNameEqual = string.Equals(a.NodeName, b.NodeName, StringComparison.Ordinal);
-        bool riskMetricEqual = string.Equals(a.RiskMetric, b.RiskMetric, StringComparison.Ordinal);
-        bool triggerNameEqual = string.Equals(a.TriggerName, b.TriggerName, StringComparison.Ordinal);
-        bool triggerTypeEqual = string.Equals(a.TriggerType, b.TriggerType, StringComparison.Ordinal);
+        protected Dictionary<string, string> m_configuration;
 
-        bool metricClose = Math.Abs(a.MetricValueGBP - b.MetricValueGBP) <= 1;
-        bool triggerClose = Math.Abs(a.TriggerValueGBP - b.TriggerValueGBP) <= 1;
+        private string m_configElementName;
+        private string m_fileName;
+        private FileSystemWatcher m_fileSystemWatcher;
+        private DateTime m_lastModifiedDate = DateTime.MinValue;
+        private string m_machineNameSuffix;
+        private string m_machineAndInstanceNameSuffix;
+        public readonly string DynamicConfigInstance;
 
-        double utilA = ParseUtilisation(a.Utilisation);
-        double utilB = ParseUtilisation(b.Utilisation);
-        bool utilisationClose = Math.Abs(Math.Round(utilA) - Math.Round(utilB)) == 0;
+        private object m_fileLock = new object();
 
-        return busDateEqual
-            && nodeNameEqual
-            && riskMetricEqual
-            && triggerNameEqual
-            && triggerTypeEqual
-            && metricClose
-            && triggerClose
-            && utilisationClose;
-    }
+        public event EventHandler OnConfigRefreshed;
 
-    public bool Equals(BaseDataModel x, BaseDataModel y)
-    {
-        return AreEquivalent(x, y);
-    }
-
-    public int GetHashCode(BaseDataModel obj)
-    {
-        if (obj == null) return 0;
-
-        int hash = 17;
-        hash = hash * 23 + obj.BusDate.Date.GetHashCode();
-        hash = hash * 23 + (obj.NodeName?.GetHashCode() ?? 0);
-        hash = hash * 23 + (obj.RiskMetric?.GetHashCode() ?? 0);
-        hash = hash * 23 + (obj.TriggerName?.GetHashCode() ?? 0);
-        hash = hash * 23 + (obj.TriggerType?.GetHashCode() ?? 0);
-        hash = hash * 23 + Math.Round(obj.MetricValueGBP).GetHashCode();
-        hash = hash * 23 + Math.Round(obj.TriggerValueGBP).GetHashCode();
-        hash = hash * 23 + Math.Round(ParseUtilisation(obj.Utilisation)).GetHashCode();
-        return hash;
-    }
-
-    private double ParseUtilisation(string utilisation)
-    {
-        if (string.IsNullOrWhiteSpace(utilisation))
-            return 0;
-
-        utilisation = utilisation.Trim();
-        if (utilisation.EndsWith("%"))
+        /// <summary>
+        /// Creates a new instance of the DynamicConfig class.
+        /// </summary>
+        /// <param name="fileName">The name of the config file.</param>
+        /// <param name="autoRefresh">If true, the config collection will be refreshed
+        /// when the config file is modified.</param>
+        public DynamicConfig(string fileName, bool autoRefresh)
+            : this(fileName, autoRefresh, DEFAULT_CONFIG_ELEMENT, null)
         {
-            if (double.TryParse(utilisation.TrimEnd('%'), NumberStyles.Any, CultureInfo.InvariantCulture, out double percent))
-                return percent;
         }
-        else
+
+        /// <summary>
+        /// Creates a new instance of the DynamicConfig class.
+        /// </summary>
+        /// <param name="fileName">The name of the config file.</param>
+        /// <param name="autoRefresh">If true, the config collection will be refreshed
+        /// when the config file is modified.</param>
+        /// <param name="configElementName">The name of the config element in the config file</param>
+        public DynamicConfig(string fileName, bool autoRefresh, string configElementName)
+            : this(fileName, autoRefresh, DEFAULT_CONFIG_ELEMENT, null)
         {
-            if (double.TryParse(utilisation, NumberStyles.Any, CultureInfo.InvariantCulture, out double value))
-                return value;
         }
-        return 0;
+
+        /// <summary>
+        /// Creates a new instance of the DynamicConfig class.
+        /// </summary>
+        /// <param name="fileName">The name of the config file.</param>
+        /// <param name="autoRefresh">If true, the config collection will be refreshed
+        /// when the config file is modified.</param>
+        /// <param name="configElementName">The name of the config element in the config file</param>
+        /// <param name="instance">The instance of this dynamic config</param>
+        public DynamicConfig(string fileName, bool autoRefresh, string configElementName, string instanceName)
+        {
+            m_configElementName = configElementName;
+            m_fileName = fileName;
+            m_machineNameSuffix = '_' + Environment.MachineName.ToUpper();
+            if (instanceName != null)
+            {
+                DynamicConfigInstance = instanceName;
+                m_machineAndInstanceNameSuffix = m_machineNameSuffix + '_' + instanceName;
+            }
+
+            if (!string.IsNullOrEmpty(fileName) && File.Exists(fileName))
+            {
+                Refresh();
+
+                if (autoRefresh)
+                {
+                    m_fileSystemWatcher = new FileSystemWatcher(Path.GetDirectoryName(fileName), Path.GetFileName(fileName));
+                    m_fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                    m_fileSystemWatcher.Changed += m_fileSystemWatcher_Changed;
+                    m_fileSystemWatcher.Error += m_fileSystemWatcher_Error;
+                    m_fileSystemWatcher.EnableRaisingEvents = true;
+                }
+            }
+            else
+            {
+                Trace.WriteLine("DynamicConfig could not find file '" + fileName + "'",
+                    TraceLevel.Warning.ToString());
+            }
+        }
+
+        void m_fileSystemWatcher_Error(object sender, ErrorEventArgs e)
+        {
+            try
+            {
+                Trace.WriteLine("DynamicConfig: Error in FileSystemWatcher for fileName '" + m_fileName + "'. Error is: " + e.GetException().ToString());
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Returns the name of the config XML element in the config file.
+        /// </summary>
+        public string ConfigElementName
+        {
+            get { return m_configElementName; }
+        }
+
+        /// <summary>
+        /// Refreshes the config collection from the config file.
+        /// </summary>
+        public void Refresh()
+        {
+            Dictionary<string, string> configuration = new Dictionary<string, string>();
+            XmlDocument doc = new XmlDocument();
+
+            lock (m_fileLock)
+            {
+                doc.Load(m_fileName);
+            }
+
+            foreach (XmlNode nodAdd in doc.DocumentElement.SelectNodes(m_configElementName))
+            {
+                XmlNode nodKey = nodAdd.Attributes["key"];
+
+                if (nodKey != null)
+                {
+                    if (nodAdd.InnerXml.Length > 0)
+                    {
+                        configuration[nodKey.InnerText] = nodAdd.InnerXml;
+                    }
+                    else if (nodAdd.InnerText.Length > 0)
+                    {
+                        //Use the value of the node
+                        configuration[nodKey.InnerText] = nodAdd.InnerText;
+                    }
+                    else
+                    {
+                        XmlNode nodValue = nodAdd.Attributes["value"];
+                        if (nodValue != null)
+                        {
+                            configuration[nodKey.InnerText] = nodValue.InnerText;
+                        }
+                        else
+                        {
+                            configuration[nodKey.InnerText] = string.Empty;
+                        }
+                    }
+                }
+                else
+                {
+                    Trace.WriteLine("DynamicConfig: Could not find 'key' attribute for the following node: " +
+                        nodAdd.OuterXml, TraceLevel.Warning.ToString());
+                }
+            }
+
+            m_configuration = configuration;
+
+            PostRefresh();
+
+            FireConfigRefreshedEvent();
+
+            m_lastModifiedDate = File.GetLastWriteTime(m_fileName);
+        }
+
+        /// <summary>
+        /// This method should be overriden in sub classes to populate application specific
+        /// properties.
+        /// </summary>
+        protected virtual void PostRefresh()
+        {
+        }
+
+        /// <summary>
+        /// Fires the config refreshed event after a Refresh.
+        /// </summary>
+        private void FireConfigRefreshedEvent()
+        {
+            //fire events
+            EventHandler onConfigRefreshed = OnConfigRefreshed;
+            if (onConfigRefreshed != null)
+            {
+                try
+                {
+                    onConfigRefreshed(this, EventArgs.Empty);
+                }
+                catch (Exception exc)
+                {
+                    Trace.WriteLine("DynamicConfig: Caught exception in OnConfigRefreshed event - " +
+                        exc.ToString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the value given a string key.
+        /// </summary>
+        /// <param name="key">The config key</param>
+        /// <returns>The value</returns>
+        public string this[string key]
+        {
+            get
+            {
+                string retVal;
+                if (m_machineAndInstanceNameSuffix != null)
+                {
+                    string keyAndHostAndInstance = key + m_machineAndInstanceNameSuffix;
+                    if (m_configuration.TryGetValue(keyAndHostAndInstance, out retVal))
+                    {
+                        return retVal;
+                    }
+                }
+
+                string keyAndHost = key + m_machineNameSuffix;
+
+                if (!m_configuration.TryGetValue(keyAndHost, out retVal))
+                {
+                    return m_configuration[key];
+                }
+
+                return retVal;
+            }
+        }
+
+        public T GetValue<T>(string key, T defaultValue) where T : IConvertible
+        {
+            string text = GetValue(key, null);
+            if (text != null)
+            {
+                return (T)Convert.ChangeType(text, typeof(T));
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Returns the value given a string key.
+        /// </summary>
+        /// <param name="key">The config key.</param>
+        /// <param name="defaultValue">The value to return if the key does not exist in the collection.</param>
+        /// <returns>The value if the key exists in the collection otherwise the defaultValue.</returns>
+        public string GetValue(string key, string defaultValue)
+        {
+            string retVal;
+
+            if (m_machineAndInstanceNameSuffix != null)
+            {
+                string keyAndHostAndInstance = key + m_machineAndInstanceNameSuffix;
+                if (m_configuration.TryGetValue(keyAndHostAndInstance, out retVal))
+                {
+                    return retVal;
+                }
+            }
+
+            string keyAndHost = key + m_machineNameSuffix;
+
+            if (!m_configuration.TryGetValue(keyAndHost, out retVal))
+            {
+                if (!m_configuration.TryGetValue(key, out retVal))
+                {
+                    return defaultValue;
+                }
+            }
+
+            return retVal;
+        }
+
+        public XmlNode GetXmlValue(string key)
+        {
+            string xml = GetValue(key, null);
+
+            if (xml != null)
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml("<Doc>" + xml + "</Doc>");
+                return doc.DocumentElement.FirstChild;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the value given a string key. The key is specified exactly, that is, 
+        /// a key with hostname prepended will not be checked.
+        /// </summary>
+        /// <param name="key">The config key.</param>
+        /// <param name="defaultValue">The value to return if the key does not exist in the collection.</param>
+        /// <returns>The value if the key exists in the collection otherwise the defaultValue.</returns>
+        public string GetValueByExactKey(string key, string defaultValue)
+        {
+            string retVal;
+            if (!m_configuration.TryGetValue(key, out retVal))
+            {
+                return defaultValue;
+            }
+
+            return retVal;
+        }
+
+        /// <summary>
+        /// Called when the config file is modified and AutoRefresh is set to true.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void m_fileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            Debug.WriteLine("DynamicConfig: Caught last write changed for file '" + e.FullPath + "'");
+            try
+            {
+                if (m_lastModifiedDate != File.GetLastWriteTime(m_fileName))
+                {
+                    try
+                    {
+                        Refresh();
+                    }
+                    catch (IOException ioe)
+                    {
+                        if (ioe.Message.EndsWith("because it is being used by another process."))
+                        {
+                            //Wait 1 second and try again
+                            System.Threading.Thread.Sleep(1000);
+                            try
+                            {
+                                Refresh();
+                            }
+                            catch (IOException ioe2)
+                            {
+                                if (ioe2.Message.EndsWith("because it is being used by another process."))
+                                {
+                                    //Wait 5 seconds and try again
+                                    System.Threading.Thread.Sleep(5000);
+                                    Refresh();
+                                }
+                            }
+                        }
+                        else throw;
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("DynamicConfig: Suppressing refresh based on file timestamp change");
+                }
+            }
+            catch (Exception exc)
+            {
+                Trace.WriteLine("DynamicConfig: Caught exception on refresh: " + exc.ToString());
+            }
+        }
+
+        protected void SetValue(string key, string value)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(m_fileName);
+
+            XmlNode nod = doc.DocumentElement.SelectSingleNode(
+                string.Format("{0}[@key='{1}']", m_configElementName, key));
+
+            if (nod == null)
+            {
+                XmlElement ele = doc.CreateElement(m_configElementName);
+                ele.Attributes.Append(doc.CreateAttribute("key")).Value = key;
+                ele.Attributes.Append(doc.CreateAttribute("value")).Value = value;
+                doc.DocumentElement.AppendChild(ele);
+            }
+            else
+            {
+                ((XmlElement)nod).Attributes["value"].Value = value;
+            }
+
+            Save(doc);
+        }
+
+        public void Save(string xml)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+            Save(doc);
+        }
+
+        public void Save(XmlDocument doc)
+        {
+            lock (m_fileLock)
+            {
+                try
+                {
+                    doc.Save(m_fileName);
+                }
+                catch
+                {
+                    IOTools.SetFileReadOnlyAttribute(m_fileName, false);
+                    doc.Save(m_fileName);
+                }
+            }
+        }
+
+        #region IDisposable Members
+
+        /// <summary>
+        /// Releases any resources held by this class.
+        /// </summary>
+        public void Dispose()
+        {
+            if (m_fileSystemWatcher != null)
+            {
+                try
+                {
+                    m_fileSystemWatcher.EnableRaisingEvents = false;
+                    m_fileSystemWatcher.Dispose();
+                }
+                catch { }
+
+                m_fileSystemWatcher = null;
+            }
+        }
+
+        #endregion
     }
 }
